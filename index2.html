@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JARVIS AI</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #050b14;
+      color: #00f0ff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    .container {
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .jarvis-title {
+      font-size: 4rem;
+      font-weight: 900;
+      letter-spacing: 0.5rem;
+      text-shadow: 0 0 20px #00f0ff, 0 0 40px #00f0ff;
+      display: flex;
+      justify-content: center;
+    }
+    .letter {
+      display: inline-block;
+      opacity: 0;
+      transition: all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    /* Initial fly-in positions from outside the screen */
+    .letter:nth-child(1) { transform: translate(-50vw, -50vh) rotate(-180deg); }
+    .letter:nth-child(2) { transform: translate(50vw, -50vh) rotate(180deg); }
+    .letter:nth-child(3) { transform: translate(-50vw, 50vh) rotate(-90deg); }
+    .letter:nth-child(4) { transform: translate(50vw, 50vh) rotate(90deg); }
+    .letter:nth-child(5) { transform: translate(0, 100vh); }
+    .letter:nth-child(6) { transform: translate(0, -100vh); }
+
+    /* Target position when assembled */
+    .letter.assemble {
+      opacity: 1;
+      transform: translate(0, 0) rotate(0deg);
+    }
+
+    .subtitle {
+      margin-top: 15px;
+      font-size: 0.9rem;
+      color: #88aaff;
+      letter-spacing: 0.2rem;
+      text-transform: uppercase;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+    .subtitle.visible {
+      opacity: 0.8;
+    }
+
+    #speech-output {
+      margin-top: 40px;
+      font-size: 1.5rem;
+      height: 40px;
+      color: #ffffff;
+      text-shadow: 0 0 10px #ffffff;
+      min-height: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container" id="jarvisBtn">
+    <div class="jarvis-title">
+      <span class="letter">J</span>
+      <span class="letter">A</span>
+      <span class="letter">R</span>
+      <span class="letter">V</span>
+      <span class="letter">I</span>
+      <span class="letter">S</span>
+    </div>
+    <div class="subtitle" id="sub">Tap to activate</div>
+  </div>
+
+  <div id="speech-output"></div>
+
+  <script>
+    // Assemble letters on load
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        const letters = document.querySelectorAll('.letter');
+        letters.forEach((letter, index) => {
+          setTimeout(() => {
+            letter.classList.add('assemble');
+          }, index * 150);
+        });
+        
+        setTimeout(() => {
+          document.getElementById('sub').classList.add('visible');
+        }, 1200);
+      }, 300);
+    });
+
+    // Voice & interaction handling
+    const jarvisBtn = document.getElementById('jarvisBtn');
+    const output = document.getElementById('speech-output');
+    const message = "Hello Anish, I am your AI assistant";
+
+    jarvisBtn.addEventListener('click', () => {
+      output.textContent = message;
+
+      // Web Speech API for voice synthesis
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Stop ongoing speech
+        const utterance = new SpeechSynthesisUtterance(message);
+        utterance.rate = 0.9;
+        utterance.pitch = 1.0;
+        
+        // Try selecting a natural English voice
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find(v => v.lang.includes('en') && v.name.includes('Google'));
+        if (preferredVoice) utterance.voice = preferredVoice;
+
+        window.speechSynthesis.speak(utterance);
+      }
+    });
+  </script>
+</body>
+</html>
+
