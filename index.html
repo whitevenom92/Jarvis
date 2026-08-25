@@ -39,7 +39,6 @@
       opacity: 0;
       transition: all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
-    /* Initial fly-in positions from outside the screen */
     .letter:nth-child(1) { transform: translate(-50vw, -50vh) rotate(-180deg); }
     .letter:nth-child(2) { transform: translate(50vw, -50vh) rotate(180deg); }
     .letter:nth-child(3) { transform: translate(-50vw, 50vh) rotate(-90deg); }
@@ -47,7 +46,6 @@
     .letter:nth-child(5) { transform: translate(0, 100vh); }
     .letter:nth-child(6) { transform: translate(0, -100vh); }
 
-    /* Target position when assembled */
     .letter.assemble {
       opacity: 1;
       transform: translate(0, 0) rotate(0deg);
@@ -68,11 +66,19 @@
 
     #speech-output {
       margin-top: 40px;
-      font-size: 1.5rem;
-      height: 40px;
+      font-size: 1.4rem;
       color: #ffffff;
       text-shadow: 0 0 10px #ffffff;
       min-height: 2rem;
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: #00ff88;
+      letter-spacing: 0.1rem;
     }
   </style>
 </head>
@@ -91,6 +97,7 @@
   </div>
 
   <div id="speech-output"></div>
+  <div class="status" id="status-text"></div>
 
   <script>
     // Assemble letters on load
@@ -109,30 +116,92 @@
       }, 300);
     });
 
-    // Voice & interaction handling
     const jarvisBtn = document.getElementById('jarvisBtn');
     const output = document.getElementById('speech-output');
-    const message = "Hello Anish, I am your AI assistant";
+    const statusText = document.getElementById('status-text');
+    const initialMessage = "Hello Anish, I am your AI assistant";
 
-    jarvisBtn.addEventListener('click', () => {
-      output.textContent = message;
+    let recognition;
+    let isActivated = false;
 
-      // Web Speech API for voice synthesis
+    // Helper function for speech synthesis
+    function speakText(text, onEndCallback) {
       if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Stop ongoing speech
-        const utterance = new SpeechSynthesisUtterance(message);
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 0.9;
         utterance.pitch = 1.0;
-        
-        // Try selecting a natural English voice
+
         const voices = window.speechSynthesis.getVoices();
         const preferredVoice = voices.find(v => v.lang.includes('en') && v.name.includes('Google'));
         if (preferredVoice) utterance.voice = preferredVoice;
 
+        if (onEndCallback) {
+          utterance.onend = onEndCallback;
+        }
+
         window.speechSynthesis.speak(utterance);
       }
+    }
+
+    // Speech Recognition setup
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    function startListening() {
+      if (!SpeechRecognition) {
+        statusText.textContent = "Speech recognition not supported in this browser.";
+        return;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        statusText.textContent = "Listening... Speak now";
+      };
+
+      recognition.onresult = (event) => {
+        const userSaid = event.results[0][0].transcript;
+        output.textContent = `Anish: "${userSaid}"`;
+        statusText.textContent = "JARVIS is repeating...";
+
+        // Repeat back what user said
+        speakText(userSaid, () => {
+          // Restart listening after speaking completes
+          startListening();
+        });
+      };
+
+      recognition.onerror = (event) => {
+        if (event.error !== 'no-speech') {
+          statusText.textContent = "Error listening. Retrying...";
+        }
+        setTimeout(startListening, 1000);
+      };
+
+      recognition.onend = () => {
+        if (!window.speechSynthesis.speaking) {
+          startListening();
+        }
+      };
+
+      recognition.start();
+    }
+
+    // Tap action
+    jarvisBtn.addEventListener('click', () => {
+      if (isActivated) return;
+      isActivated = true;
+
+      output.textContent = initialMessage;
+      statusText.textContent = "Initializing JARVIS...";
+
+      speakText(initialMessage, () => {
+        startListening();
+      });
     });
   </script>
 </body>
 </html>
-
