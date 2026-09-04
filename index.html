@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JARVIS AI</title>
+  <title>Speech to Text</title>
   <style>
     * {
       box-sizing: border-box;
@@ -11,198 +11,176 @@
       padding: 0;
     }
     body {
-      background-color: #050b14;
-      color: #00f0ff;
+      background-color: #0b132b;
+      color: #ffffff;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      height: 100vh;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
-      overflow: hidden;
+      justify-content: center;
+      padding: 20px;
     }
     .container {
+      background-color: #1c2541;
+      width: 100%;
+      max-width: 600px;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
       text-align: center;
-      cursor: pointer;
-      user-select: none;
     }
-    .jarvis-title {
-      font-size: 4rem;
-      font-weight: 900;
-      letter-spacing: 0.5rem;
-      text-shadow: 0 0 20px #00f0ff, 0 0 40px #00f0ff;
-      display: flex;
-      justify-content: center;
+    h1 {
+      margin-bottom: 20px;
+      color: #4ea8de;
+      font-size: 1.8rem;
     }
-    .letter {
-      display: inline-block;
-      opacity: 0;
-      transition: all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    #text-output {
+      width: 100%;
+      height: 200px;
+      background-color: #0b132b;
+      color: #f1f1f1;
+      border: 1px solid #3a506b;
+      border-radius: 8px;
+      padding: 15px;
+      font-size: 1.1rem;
+      resize: none;
+      margin-bottom: 20px;
+      outline: none;
     }
-    .letter:nth-child(1) { transform: translate(-50vw, -50vh) rotate(-180deg); }
-    .letter:nth-child(2) { transform: translate(50vw, -50vh) rotate(180deg); }
-    .letter:nth-child(3) { transform: translate(-50vw, 50vh) rotate(-90deg); }
-    .letter:nth-child(4) { transform: translate(50vw, 50vh) rotate(90deg); }
-    .letter:nth-child(5) { transform: translate(0, 100vh); }
-    .letter:nth-child(6) { transform: translate(0, -100vh); }
-
-    .letter.assemble {
-      opacity: 1;
-      transform: translate(0, 0) rotate(0deg);
-    }
-
-    .subtitle {
-      margin-top: 15px;
-      font-size: 0.9rem;
-      color: #88aaff;
-      letter-spacing: 0.2rem;
-      text-transform: uppercase;
-      opacity: 0;
-      transition: opacity 1s ease;
-    }
-    .subtitle.visible {
-      opacity: 0.8;
-    }
-
-    #speech-output {
-      margin-top: 40px;
-      font-size: 1.4rem;
-      color: #ffffff;
-      text-shadow: 0 0 10px #ffffff;
-      min-height: 2rem;
-      text-align: center;
-      padding: 0 20px;
-    }
-
     .status {
-      margin-top: 10px;
-      font-size: 0.85rem;
-      color: #00ff88;
-      letter-spacing: 0.1rem;
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+      color: #5bc0be;
+      min-height: 24px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 12px 24px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    #start-btn {
+      background-color: #4ea8de;
+      color: #0b132b;
+    }
+    #start-btn.listening {
+      background-color: #ff4d4d;
+      color: #ffffff;
+    }
+    #clear-btn, #copy-btn {
+      background-color: #3a506b;
+      color: #ffffff;
+    }
+    button:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
     }
   </style>
 </head>
 <body>
 
-  <div class="container" id="jarvisBtn">
-    <div class="jarvis-title">
-      <span class="letter">J</span>
-      <span class="letter">A</span>
-      <span class="letter">R</span>
-      <span class="letter">V</span>
-      <span class="letter">I</span>
-      <span class="letter">S</span>
+  <div class="container">
+    <h1>Speech to Text Converter</h1>
+    <textarea id="text-output" placeholder="Your spoken text will appear here..." readonly></textarea>
+    <div class="status" id="status">Click "Start Listening" and allow microphone access.</div>
+    
+    <div class="controls">
+      <button id="start-btn">Start Listening</button>
+      <button id="clear-btn">Clear Text</button>
+      <button id="copy-btn">Copy Text</button>
     </div>
-    <div class="subtitle" id="sub">Tap to activate</div>
   </div>
 
-  <div id="speech-output"></div>
-  <div class="status" id="status-text"></div>
-
   <script>
-    // Assemble letters on load
-    window.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        const letters = document.querySelectorAll('.letter');
-        letters.forEach((letter, index) => {
-          setTimeout(() => {
-            letter.classList.add('assemble');
-          }, index * 150);
-        });
-        
-        setTimeout(() => {
-          document.getElementById('sub').classList.add('visible');
-        }, 1200);
-      }, 300);
-    });
+    const startBtn = document.getElementById('start-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const copyBtn = document.getElementById('copy-btn');
+    const output = document.getElementById('text-output');
+    const status = document.getElementById('status');
 
-    const jarvisBtn = document.getElementById('jarvisBtn');
-    const output = document.getElementById('speech-output');
-    const statusText = document.getElementById('status-text');
-    const initialMessage = "Hello Anish, I am your AI assistant";
-
-    let recognition;
-    let isActivated = false;
-
-    // Helper function for speech synthesis
-    function speakText(text, onEndCallback) {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.9;
-        utterance.pitch = 1.0;
-
-        const voices = window.speechSynthesis.getVoices();
-        const preferredVoice = voices.find(v => v.lang.includes('en') && v.name.includes('Google'));
-        if (preferredVoice) utterance.voice = preferredVoice;
-
-        if (onEndCallback) {
-          utterance.onend = onEndCallback;
-        }
-
-        window.speechSynthesis.speak(utterance);
-      }
-    }
-
-    // Speech Recognition setup
+    // Check for browser support
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    function startListening() {
-      if (!SpeechRecognition) {
-        statusText.textContent = "Speech recognition not supported in this browser.";
-        return;
-      }
+    if (!SpeechRecognition) {
+      status.textContent = "Speech Recognition API is not supported in this browser. Please use Google Chrome or Safari.";
+      startBtn.disabled = true;
+    } else {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;       // Keep listening until stopped
+      recognition.interimResults = true;    // Show results in real-time as you speak
+      recognition.lang = 'en-US';           // Set speech language
 
-      recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
+      let isListening = false;
+      let finalTranscript = '';
 
+      // Speech Recognition Events
       recognition.onstart = () => {
-        statusText.textContent = "Listening... Speak now";
+        isListening = true;
+        startBtn.textContent = 'Stop Listening';
+        startBtn.classList.add('listening');
+        status.textContent = 'Listening... Speak into your microphone.';
       };
 
       recognition.onresult = (event) => {
-        const userSaid = event.results[0][0].transcript;
-        output.textContent = `Anish: "${userSaid}"`;
-        statusText.textContent = "JARVIS is repeating...";
+        let interimTranscript = '';
 
-        // Repeat back what user said
-        speakText(userSaid, () => {
-          // Restart listening after speaking completes
-          startListening();
-        });
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript + ' ';
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        output.value = finalTranscript + interimTranscript;
       };
 
       recognition.onerror = (event) => {
-        if (event.error !== 'no-speech') {
-          statusText.textContent = "Error listening. Retrying...";
-        }
-        setTimeout(startListening, 1000);
+        status.textContent = `Error: ${event.error}`;
       };
 
       recognition.onend = () => {
-        if (!window.speechSynthesis.speaking) {
-          startListening();
-        }
+        isListening = false;
+        startBtn.textContent = 'Start Listening';
+        startBtn.classList.remove('listening');
+        status.textContent = 'Stopped listening. Click to start again.';
       };
 
-      recognition.start();
-    }
-
-    // Tap action
-    jarvisBtn.addEventListener('click', () => {
-      if (isActivated) return;
-      isActivated = true;
-
-      output.textContent = initialMessage;
-      statusText.textContent = "Initializing JARVIS...";
-
-      speakText(initialMessage, () => {
-        startListening();
+      // Button Listeners
+      startBtn.addEventListener('click', () => {
+        if (isListening) {
+          recognition.stop();
+        } else {
+          recognition.start();
+        }
       });
-    });
+
+      clearBtn.addEventListener('click', () => {
+        finalTranscript = '';
+        output.value = '';
+        status.textContent = 'Cleared text.';
+      });
+
+      copyBtn.addEventListener('click', () => {
+        if (output.value) {
+          navigator.clipboard.writeText(output.value);
+          status.textContent = 'Copied text to clipboard!';
+        }
+      });
+    }
   </script>
 </body>
 </html>
+
 
